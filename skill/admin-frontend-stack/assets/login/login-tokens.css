@@ -1,0 +1,43 @@
+/*
+ * 登录页插画小人的颜色与动画：合并进项目的全局 CSS（与 shadcn 生成的 :root / .dark / @theme inline 合并，不要另起一份）。
+ * --mascot-1 跟随主色；另外三个是固定配色，只用于登录插画（icons-and-graphics.md 中"插画只用主色 + 一个点缀色"的例外）。
+ * 四种颜色在 login-mascots.tsx 里每次打开页面随机分配给四个小人；其中 1、2 是深色（五官用白色），3、4 是浅色（五官用深色）。
+ */
+:root {
+  --mascot-1: var(--primary);
+  --mascot-2: oklch(0.29 0.02 285);
+  --mascot-3: oklch(0.79 0.14 50);
+  --mascot-4: oklch(0.88 0.15 98);
+  --mascot-ink: oklch(0.24 0 0);
+}
+.dark {
+  --mascot-2: oklch(0.44 0.03 285);
+}
+
+@theme inline {
+  --color-mascot-1: var(--mascot-1);
+  --color-mascot-2: var(--mascot-2);
+  --color-mascot-3: var(--mascot-3);
+  --color-mascot-4: var(--mascot-4);
+  --color-mascot-ink: var(--mascot-ink);
+}
+
+/* 登录页动画：漂浮的背景圆、眨眼、登录失败摇头 */
+@theme {
+  --animate-float-slow: float-slow 9s ease-in-out infinite;
+  --animate-blink: blink 5s ease-in-out infinite;
+  --animate-shake: shake 0.5s ease-in-out;
+  @keyframes float-slow {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-18px); }
+  }
+  @keyframes blink {
+    0%, 93%, 100% { transform: scaleY(1); }
+    96% { transform: scaleY(0.1); }
+  }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-10px); }
+    40%, 80% { transform: translateX(10px); }
+  }
+}

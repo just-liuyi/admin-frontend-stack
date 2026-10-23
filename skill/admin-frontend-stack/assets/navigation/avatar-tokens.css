@@ -1,0 +1,24 @@
+/*
+ * 头像配色 token：合并进项目的全局 CSS（与 shadcn 生成的 :root / .dark / @theme inline 合并，不要另起一份）。
+ * 仅用于"按姓名配色"的头像，用来区分不同的人；不要拿来给功能图标、按钮配色。
+ * 数值在 radix-nova + 白字下目测过深浅两种模式；换品牌色后请再目测一次。
+ */
+:root {
+  --avatar-1: oklch(0.58 0.16 255);
+  --avatar-2: oklch(0.6 0.15 160);
+  --avatar-3: oklch(0.64 0.16 55);
+  --avatar-4: oklch(0.6 0.19 350);
+  --avatar-5: oklch(0.56 0.2 290);
+  --avatar-6: oklch(0.6 0.12 200);
+  --avatar-foreground: oklch(0.99 0 0);
+}
+
+@theme inline {
+  --color-avatar-1: var(--avatar-1);
+  --color-avatar-2: var(--avatar-2);
+  --color-avatar-3: var(--avatar-3);
+  --color-avatar-4: var(--avatar-4);
+  --color-avatar-5: var(--avatar-5);
+  --color-avatar-6: var(--avatar-6);
+  --color-avatar-foreground: var(--avatar-foreground);
+}
