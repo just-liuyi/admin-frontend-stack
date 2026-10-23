@@ -1,0 +1,50 @@
+# 构建 demo/ 并发布到 GitHub Pages：https://just-liuyi.github.io/admin-frontend-stack/
+# 推送到 main 且改动了 demo/ 时自动运行；也可以在仓库的 Actions 页面手动运行
+name: 发布示例页
+
+on:
+  push:
+    branches: [main]
+    paths: ["demo/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: demo/package-lock.json
+      - run: npm ci
+      # 部署在子路径 /admin-frontend-stack/；build:pages 会额外生成 404.html，直接打开深层地址也能进入应用
+      - run: npm run build:pages
+        env:
+          BASE_PATH: /admin-frontend-stack/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: demo/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
