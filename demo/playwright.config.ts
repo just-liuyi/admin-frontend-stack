@@ -23,7 +23,8 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"], channel: CI ? undefined : "msedge" } }],
   webServer: [
-    { command: "npm run build && npx vite preview --port 4173 --strictPort", url: "http://127.0.0.1:4173", reuseExistingServer: !CI, timeout: 180_000 },
-    { command: "node tests/serve-pages.mjs", url: "http://127.0.0.1:4174/admin-frontend-stack/", reuseExistingServer: !CI, timeout: 180_000 },
+    // ⚠️ --host 127.0.0.1：Linux 上 localhost 可能解析成 IPv6 的 ::1，等待 127.0.0.1 会一直超时（Windows 上不会出现）
+    { command: "npm run build && npx vite preview --host 127.0.0.1 --port 4173 --strictPort", url: "http://127.0.0.1:4173", reuseExistingServer: !CI, timeout: 180_000, stdout: "pipe" },
+    { command: "node tests/serve-pages.mjs", url: "http://127.0.0.1:4174/admin-frontend-stack/", reuseExistingServer: !CI, timeout: 180_000, stdout: "pipe" },
   ],
 })
