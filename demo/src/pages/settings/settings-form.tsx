@@ -108,7 +108,7 @@ export function TextareaField<T extends FieldValues>({ form, name, label, descri
   )
 }
 
-export function SelectField<T extends FieldValues>({ form, name, label, description, options }: FieldProps<T> & { options: { value: string; label: string }[] }) {
+export function SelectField<T extends FieldValues>({ form, name, label, description, options, disabled }: FieldProps<T> & { options: { value: string; label: string }[]; disabled?: boolean }) {
   return (
     <Controller
       control={form.control}
@@ -116,7 +116,7 @@ export function SelectField<T extends FieldValues>({ form, name, label, descript
       render={({ field }) => (
         <Field>
           <FieldLabel htmlFor={name}>{label}</FieldLabel>
-          <Select value={field.value} onValueChange={field.onChange}>
+          <Select value={field.value} onValueChange={field.onChange} disabled={disabled}>
             <SelectTrigger id={name} className="w-full">
               <SelectValue />
             </SelectTrigger>

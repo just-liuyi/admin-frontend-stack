@@ -66,8 +66,22 @@ function OrderSection({ onDirtyChange }: SectionProps) {
 }
 
 // ---------- 账号安全 ----------
-const accountSchema = z.object({ allowRegister: z.boolean(), passwordMinLength: int(6, 32, " 位"), loginLockAttempts: int(3, 20, " 次"), sessionTimeoutMinutes: int(10, 1440, " 分钟") })
-const pickAccount = (s: Settings) => ({ allowRegister: s.allowRegister, passwordMinLength: s.passwordMinLength, loginLockAttempts: s.loginLockAttempts, sessionTimeoutMinutes: s.sessionTimeoutMinutes })
+const accountSchema = z.object({
+  captchaEnabled: z.boolean(),
+  captchaType: z.enum(["slider", "digits"]),
+  allowRegister: z.boolean(),
+  passwordMinLength: int(6, 32, " 位"),
+  loginLockAttempts: int(3, 20, " 次"),
+  sessionTimeoutMinutes: int(10, 1440, " 分钟"),
+})
+const pickAccount = (s: Settings) => ({
+  captchaEnabled: s.captchaEnabled,
+  captchaType: s.captchaType,
+  allowRegister: s.allowRegister,
+  passwordMinLength: s.passwordMinLength,
+  loginLockAttempts: s.loginLockAttempts,
+  sessionTimeoutMinutes: s.sessionTimeoutMinutes,
+})
 
 function AccountSection({ onDirtyChange }: SectionProps) {
   return (
@@ -77,6 +91,18 @@ function AccountSection({ onDirtyChange }: SectionProps) {
           <TextField form={form} name="passwordMinLength" label="密码最少位数" number />
           <TextField form={form} name="loginLockAttempts" label="连续登录失败锁定（次）" number description="达到次数后锁定 30 分钟" />
           <TextField form={form} name="sessionTimeoutMinutes" label="无操作自动退出（分钟）" number />
+          <SwitchField form={form} name="captchaEnabled" label="登录验证码" description="开启后登录需要先完成验证码，防止机器批量尝试" />
+          <SelectField
+            form={form}
+            name="captchaType"
+            label="验证码类型"
+            disabled={!form.watch("captchaEnabled")}
+            description={form.watch("captchaEnabled") ? "默认使用滑块验证码" : "先开启验证码才生效"}
+            options={[
+              { value: "slider", label: "滑块验证码（默认）" },
+              { value: "digits", label: "数字图形验证码" },
+            ]}
+          />
           <SwitchField form={form} name="allowRegister" label="开放用户自助注册" description="关闭后只能由管理员创建账号" />
         </FieldGrid>
       )}

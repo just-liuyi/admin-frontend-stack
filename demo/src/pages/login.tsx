@@ -5,12 +5,15 @@ import { z } from "zod"
 import { Box, Eye, EyeOff, Loader2, Lock, MessageSquareText, Smartphone, User } from "lucide-react"
 import { toast } from "sonner"
 
+import { CaptchaField } from "@/components/captcha/captcha-field"
 import { LoginMascots, type Mood } from "@/components/login-mascots"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { LoginError, loginWithPassword, loginWithSms, sendSmsCode } from "@/api/auth"
+import type { CaptchaKind, CaptchaProof } from "@/api/captcha"
+import { useLoginConfig } from "@/pages/settings/settings-api"
 import { useAuthStore, type CurrentUser } from "@/stores/auth"
 import { useTabsStore } from "@/stores/tabs"
 import { cn } from "@/lib/utils"
@@ -30,12 +33,20 @@ const tabTriggerClass =
 
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login)
+  // 是否启用验证码、用哪一种（在设置页配置；真实项目里由公开接口返回）
+  const { data: loginConfig, isError: configFailed } = useLoginConfig()
+  // 配置接口失败时按"启用滑块"处理（安全的默认值），不要让页面一直停在骨架
+  const captcha: CaptchaKind | null = configFailed ? "slider" : loginConfig?.captchaEnabled ? loginConfig.captchaType : null
+  // 配置没回来之前先不渲染表单：否则会先画出表单、再插入验证码，卡片高度变化、整块上下跳
+  const configReady = loginConfig !== undefined || configFailed
   const resetTabs = useTabsStore((s) => s.reset)
 
   // 小人的情绪由表单状态推出来
   const [focus, setFocus] = useState<Focus>(null)
   const [passwordFilled, setPasswordFilled] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
+  // 页签改为受控：只有当前页签的验证码去取题
+  const [tab, setTab] = useState("password")
   const [failed, setFailed] = useState(false)
   const [shake, setShake] = useState(0)
   const mood: Mood = failed
@@ -85,10 +96,14 @@ export default function LoginPage() {
       <main className="flex items-center justify-center bg-linear-to-b from-primary/8 to-background p-6 lg:bg-none">
         <div className="w-full max-w-sm rounded-2xl bg-card p-8 shadow-xl ring-1 ring-border lg:max-w-md lg:bg-transparent lg:p-0 lg:shadow-none lg:ring-0">
           <Brand className="mb-8 lg:hidden" />
+          {!configReady ? (
+            <LoginSkeleton />
+          ) : (
+            <>
           <h1 className="text-3xl font-bold tracking-tight">欢迎回来</h1>
           <p className="mt-1 text-sm text-muted-foreground">请输入您的账号信息以登录系统</p>
 
-          <Tabs defaultValue="password" className="mt-8 gap-6" onValueChange={() => setShowPassword(false)}>
+          <Tabs value={tab} className="mt-8 gap-6" onValueChange={(v) => { setTab(v); setShowPassword(false) }}>
             <TabsList variant="line" className="w-full justify-start border-b p-0">
               <TabsTrigger value="password" className={tabTriggerClass}>
                 账号密码登录
@@ -101,6 +116,8 @@ export default function LoginPage() {
             <div className="grid">
               <TabsContent value="password" forceMount className="col-start-1 row-start-1 data-[state=inactive]:invisible">
                 <PasswordForm
+                  captcha={captcha}
+                  captchaActive={tab === "password"}
                   focusProps={focusProps}
                   showPassword={showPassword}
                   onToggleShow={() => setShowPassword((v) => !v)}
@@ -110,10 +127,12 @@ export default function LoginPage() {
                 />
               </TabsContent>
               <TabsContent value="sms" forceMount className="col-start-1 row-start-1 data-[state=inactive]:invisible">
-                <SmsForm focusProps={focusProps} onFail={onFail} onSuccess={onSuccess} />
+                <SmsForm captcha={captcha} captchaActive={tab === "sms"} focusProps={focusProps} onFail={onFail} onSuccess={onSuccess} />
               </TabsContent>
             </div>
           </Tabs>
+            </>
+          )}
         </div>
       </main>
     </div>
@@ -143,6 +162,9 @@ function Decor() {
 }
 
 type FormCommon = {
+  /** null = 未启用验证码 */
+  captcha: CaptchaKind | null
+  captchaActive: boolean
   focusProps: (name: Exclude<Focus, null>) => { onFocus: () => void; onBlurCapture: () => void }
   onFail: () => void
   onSuccess: (user: CurrentUser) => void
@@ -179,6 +201,8 @@ const passwordSchema = z.object({
 })
 
 function PasswordForm({
+  captcha,
+  captchaActive,
   focusProps,
   showPassword,
   onToggleShow,
@@ -188,16 +212,29 @@ function PasswordForm({
 }: FormCommon & { showPassword: boolean; onToggleShow: () => void; onPasswordChange: (v: string) => void }) {
   const { register, handleSubmit, control, formState } = useForm({ resolver: zodResolver(passwordSchema), defaultValues: { username: "", password: "" } })
   const [error, setError] = useState<string | null>(null)
+  // 验证码：proof 为 null 表示还没通过；captchaKey 变化会让验证码重新取题
+  const [proof, setProof] = useState<CaptchaProof | null>(null)
+  const [captchaKey, setCaptchaKey] = useState(0)
   const password = useWatch({ control, name: "password" })
   useEffect(() => onPasswordChange(password), [password, onPasswordChange])
 
   const submit = handleSubmit(async (v) => {
     setError(null)
+    if (captcha && !proof) {
+      setError("请先完成验证码")
+      onFail()
+      return
+    }
     try {
-      onSuccess(await loginWithPassword(v.username, v.password))
+      onSuccess(await loginWithPassword(v.username, v.password, proof ?? undefined))
     } catch (e) {
       setError(e instanceof LoginError ? e.message : "登录失败，请稍后再试")
       onFail()
+      // 验证码一次一用：登录失败后换一张
+      if (captcha) {
+        setProof(null)
+        setCaptchaKey((k) => k + 1)
+      }
     }
   })
 
@@ -242,6 +279,14 @@ function PasswordForm({
         </div>
         <FieldError errors={[formState.errors.password]} />
       </Field>
+      {captcha ? (
+        <Field>
+          <FieldLabel htmlFor={captcha === "digits" ? "captcha" : undefined}>
+            <Required /> 验证码
+          </FieldLabel>
+          <CaptchaField key={captchaKey} kind={captcha} active={captchaActive} onProof={setProof} disabled={formState.isSubmitting} />
+        </Field>
+      ) : null}
       <SubmitButton pending={formState.isSubmitting} />
       <p className="text-center text-xs text-muted-foreground">演示账号：admin / 123456</p>
     </form>
@@ -253,11 +298,13 @@ const smsSchema = z.object({
   code: z.string().regex(/^\d{6}$/, "验证码为 6 位数字"),
 })
 
-function SmsForm({ focusProps, onFail, onSuccess }: FormCommon) {
+function SmsForm({ captcha, captchaActive, focusProps, onFail, onSuccess }: FormCommon) {
   const { register, handleSubmit, trigger, getValues, formState } = useForm({ resolver: zodResolver(smsSchema), defaultValues: { phone: "", code: "" } })
   const [error, setError] = useState<string | null>(null)
   const [countdown, setCountdown] = useState(0)
   const [sending, setSending] = useState(false)
+  const [proof, setProof] = useState<CaptchaProof | null>(null)
+  const [captchaKey, setCaptchaKey] = useState(0)
 
   useEffect(() => {
     if (countdown <= 0) return
@@ -279,11 +326,20 @@ function SmsForm({ focusProps, onFail, onSuccess }: FormCommon) {
 
   const submit = handleSubmit(async (v) => {
     setError(null)
+    if (captcha && !proof) {
+      setError("请先完成验证码")
+      onFail()
+      return
+    }
     try {
-      onSuccess(await loginWithSms(v.phone, v.code))
+      onSuccess(await loginWithSms(v.phone, v.code, proof ?? undefined))
     } catch (e) {
       setError(e instanceof LoginError ? e.message : "登录失败，请稍后再试")
       onFail()
+      if (captcha) {
+        setProof(null)
+        setCaptchaKey((k) => k + 1)
+      }
     }
   })
 
@@ -311,6 +367,14 @@ function SmsForm({ focusProps, onFail, onSuccess }: FormCommon) {
         </div>
         <FieldError errors={[formState.errors.code]} />
       </Field>
+      {captcha ? (
+        <Field>
+          <FieldLabel htmlFor={captcha === "digits" ? "captcha" : undefined}>
+            <Required /> 验证码
+          </FieldLabel>
+          <CaptchaField key={captchaKey} kind={captcha} active={captchaActive} onProof={setProof} disabled={formState.isSubmitting} />
+        </Field>
+      ) : null}
       <SubmitButton pending={formState.isSubmitting} />
     </form>
   )
@@ -322,5 +386,31 @@ function SubmitButton({ pending }: { pending: boolean }) {
       {pending ? <Loader2 className="animate-spin" /> : null}
       {pending ? "登录中…" : "登 录"}
     </Button>
+  )
+}
+
+/** 登录配置（是否启用验证码等）还没回来时的占位，和真实内容大致同高，避免页面跳动 */
+function LoginSkeleton() {
+  return (
+    <div className="flex flex-col gap-5" aria-hidden="true">
+      <div>
+        <div className="h-9 w-40 rounded-md bg-muted" />
+        <div className="mt-3 h-4 w-56 rounded bg-muted" />
+      </div>
+      <div className="flex gap-6 border-b pb-3">
+        <div className="h-5 w-24 rounded bg-muted" />
+        <div className="h-5 w-28 rounded bg-muted" />
+      </div>
+      <div className="flex flex-col gap-5">
+        <div className="h-4 w-16 rounded bg-muted" />
+        <div className="h-8 w-full rounded-md bg-muted" />
+        <div className="h-4 w-12 rounded bg-muted" />
+        <div className="h-8 w-full rounded-md bg-muted" />
+        <div className="h-4 w-12 rounded bg-muted" />
+        <div className="h-20 w-full rounded-lg bg-muted" />
+        <div className="h-10 w-full rounded-lg bg-muted" />
+        <div className="h-11 w-full rounded-md bg-muted" />
+      </div>
+    </div>
   )
 }

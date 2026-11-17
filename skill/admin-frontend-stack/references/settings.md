@@ -24,7 +24,7 @@
 | `index.tsx` | `src/pages/settings/index.tsx` | 页面：标题、分类页签、未保存修改的确认弹窗 |
 | `sections.tsx` | `src/pages/settings/` | 分类清单 + 每个分类的字段和校验规则 |
 | `settings-form.tsx` | `src/pages/settings/` | 分类表单外壳（读取、保存、取消、未保存提示）和字段组件 |
-| `settings-api.ts` | `src/pages/settings/` | 设置的类型、读取 / 保存接口、查询 hooks。**接口是假实现**，接后端时只换函数内部 |
+| `settings-api.ts` | `src/pages/settings/` | 设置的类型、读取 / 保存接口、查询 hooks，以及登录页用的公开配置。**接口是假实现**，接后端时只换函数内部 |
 
 还需要：`npx shadcn@latest add card select skeleton switch textarea alert-dialog tabs field input button sonner`，以及 `react-hook-form`、`@hookform/resolvers@5`、`zod@4`、`@tanstack/react-query`。
 在 `src/config/routes.tsx` 里把 `/settings` 的占位页换成 `import SettingsPage from "@/pages/settings"`。
@@ -56,6 +56,7 @@
 - 长文本（`TextareaField`）独占一整行。
 - **所有字段同一种结构：标题在上、控件在下、说明在最下。** 开关也一样：标题在上，开关那一行与输入框同高（radix-nova 的 Input 是 `h-8`），旁边写"已开启 / 已关闭"，说明在下面。这样同一行里的输入框、下拉框、开关，标题、控件、说明全部对齐。
 - 不要把开关做成带边框的卡片和输入框混排，也不要把开关放到行的最右端、离文字很远。
+- 下拉框可以禁用（`SelectField` 的 `disabled`）：例如「验证码类型」在「登录验证码」关闭时禁用并提示"先开启验证码才生效"。
 
 ## 行为
 
@@ -64,6 +65,7 @@
 - **切换分类时如果有未保存的修改，弹窗确认**："继续编辑"留在原分类，修改保留；"放弃修改"切过去，修改丢弃。
 - 当前分类写在地址里（`?tab=account`，第一个分类不写参数）：刷新、分享链接、在顶部多页签之间来回切换后，都停在原来的分类。
 - 校验用 Zod，错误用中文显示在字段下方；`<form noValidate>`。
+- 演示实现把设置存在浏览器 localStorage（换浏览器或清缓存会恢复默认）；真实项目由后端保存，并提供登录页需要的公开配置（`fetchLoginConfig`），否则改完设置刷新页面不生效。
 - 加载中显示骨架，出错显示"重试"。
 
 ## 新增一个分类 / 一个设置项

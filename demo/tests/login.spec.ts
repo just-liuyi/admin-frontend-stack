@@ -1,4 +1,4 @@
-import { expect, hasRing, primaryColor, skewOf, test } from "./fixtures"
+import { captchaKind, expect, hasRing, login, primaryColor, skewOf, solveCaptcha, test } from "./fixtures"
 
 // 登录页：小人互动、随机配色、两种登录方式、登录守卫与回跳。规范见 skill 的 references/login.md
 test.use({ loggedIn: false, viewport: { width: 1440, height: 860 } })
@@ -11,9 +11,7 @@ const loginBtn = (page: import("@playwright/test").Page) => page.getByRole("butt
 test("未登录访问内页跳到登录页，登录后回到原页面", async ({ page }) => {
   await page.goto("/users")
   await expect(page).toHaveURL(/\/login\?redirect=%2Fusers$/)
-  await page.locator("#username").fill("admin")
-  await page.locator("#password").fill("123456")
-  await loginBtn(page).click()
+  await login(page)
   await expect(page).toHaveURL(/\/users$/)
   await expect(page.getByText("欢迎回来，Admin")).toBeVisible()
   await expect(page.locator('[aria-label="已打开的页面"] [role="listitem"]')).toHaveText(["仪表盘", "用户列表"])
@@ -29,9 +27,7 @@ test("未登录访问内页跳到登录页，登录后回到原页面", async ({
 
 test("回跳地址是外站时不跳过去", async ({ page }) => {
   await page.goto("/login?redirect=" + encodeURIComponent("//evil.example.com"))
-  await page.locator("#username").fill("admin")
-  await page.locator("#password").fill("123456")
-  await loginBtn(page).click()
+  await login(page)
   await expect(page).toHaveURL("http://127.0.0.1:4173/")
 })
 
@@ -65,6 +61,7 @@ test("登录失败：表单内提示、小人摇头低头后恢复；空提交�
   await page.goto("/login")
   await page.locator("#username").fill("admin")
   await page.locator("#password").fill("wrong")
+  await solveCaptcha(page)
   await loginBtn(page).click()
   await expect(page.getByRole("button", { name: "登录中…" })).toBeDisabled()
   await expect(page.getByRole("alert")).toHaveText("账号或密码错误")
@@ -87,9 +84,11 @@ test("手机验证码登录：校验手机号、倒计时、错误验证码、�
   await page.getByRole("button", { name: "获取验证码" }).click()
   await expect(page.getByRole("button", { name: /秒后重发/ })).toBeVisible()
   await page.locator("#code").fill("000000")
+  await solveCaptcha(page)
   await loginBtn(page).click()
   await expect(page.getByRole("alert")).toHaveText("验证码错误或已过期")
   await page.locator("#code").fill("123456")
+  await solveCaptcha(page)
   await loginBtn(page).click()
   await expect(page).toHaveURL("http://127.0.0.1:4173/")
 })
@@ -127,6 +126,8 @@ test("切换登录方式：位置不跳、没有焦点框、悬停时选中色�
   for (const theme of ["light", "dark"]) {
     await page.addInitScript((t) => localStorage.setItem("theme", JSON.stringify({ state: { theme: t }, version: 0 })), theme)
     await page.goto("/login")
+    // 等登录配置就绪、表单渲染出来再量（配置没回来时显示的是骨架）
+    await expect(page.locator("#username")).toBeVisible()
     const pos = () => page.evaluate(() => ({ title: Math.round(document.querySelector("h1")!.getBoundingClientRect().top), tabs: Math.round(document.querySelector('[role="tablist"]')!.getBoundingClientRect().top) }))
     const p0 = await pos()
     const sms = page.getByRole("tab", { name: "手机验证码登录" })
@@ -163,4 +164,145 @@ test.describe("减少动态效果", () => {
     await page.waitForTimeout(800)
     expect(await skewOf(mascot(page, "tall"))).toBe(0)
   })
+})
+
+test.describe("登录验证码", () => {
+  test("默认启用滑块验证码；没完成验证码不能登录", async ({ page }) => {
+    await page.goto("/login")
+    expect(await captchaKind(page)).toBe("slider")
+    await page.locator("#username").fill("admin")
+    await page.locator("#password").fill("123456")
+    await loginBtn(page).click()
+    await expect(page.getByRole("alert")).toHaveText("请先完成验证码")
+    await expect(page, "仍然停在登录页").toHaveURL(/\/login/)
+  })
+
+  test("滑块：拖错位置提示没对上并换一张，拖对后通过", async ({ page }) => {
+    await page.goto("/login")
+    await expect(page.locator('[data-captcha="slider"] img')).toBeVisible()
+    const holeX = async () =>
+      page.evaluate(() => {
+        const img = document.querySelector<HTMLImageElement>('[data-captcha="slider"] img')!
+        const svg = decodeURIComponent(img.getAttribute("src")!.replace("data:image/svg+xml;charset=utf-8,", ""))
+        return Number(svg.match(/translate\((\d+) (\d+)\)/)![1])
+      })
+    const drag = async (dx: number) => {
+      const h = (await page.locator('[role="slider"]:visible').boundingBox())!
+      const x = h.x + h.width / 2
+      const y = h.y + h.height / 2
+      await page.mouse.move(x, y)
+      await page.mouse.down()
+      await page.mouse.move(x + dx, y, { steps: 12 })
+      await page.mouse.up()
+    }
+    await drag((await holeX()) + 40)
+    await expect(page.locator('[data-captcha="slider"]')).toContainText("没对上")
+    await expect.poll(async () => (await page.locator('[data-captcha="slider"]').innerText()).includes("向右拖动")).toBe(true)
+    await drag(await holeX())
+    await expect(page.locator('[data-captcha="slider"]')).toContainText("验证通过")
+  })
+
+  test("数字图形验证码：填错提示并换一张，填对可登录", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("mock-settings", JSON.stringify({ captchaType: "digits" })))
+    await page.goto("/login")
+    expect(await captchaKind(page)).toBe("digits")
+    const code = () => page.evaluate(() => [...document.querySelectorAll('[data-captcha="digits"] svg text')].map((t) => t.textContent).join(""))
+    const first = await code()
+    await page.locator("#username").fill("admin")
+    await page.locator("#password").fill("123456")
+    await page.locator("[data-captcha-input]").fill(first === "1111" ? "2222" : "1111")
+    await loginBtn(page).click()
+    await expect(page.getByRole("alert")).toHaveText("验证码不正确，请重新输入")
+    await expect.poll(code).not.toBe(first)
+    await page.locator("[data-captcha-input]").fill(await code())
+    await loginBtn(page).click()
+    await expect(page).toHaveURL("http://127.0.0.1:4173/")
+  })
+
+  test("关闭验证码：登录页不显示，也不影响登录", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("mock-settings", JSON.stringify({ captchaEnabled: false })))
+    await page.goto("/login")
+    expect(await captchaKind(page)).toBeNull()
+    await page.locator("#username").fill("admin")
+    await page.locator("#password").fill("123456")
+    await loginBtn(page).click()
+    await expect(page).toHaveURL("http://127.0.0.1:4173/")
+  })
+
+  test("切换登录方式时验证码跟着换，且只给当前页签取题", async ({ page }) => {
+    await page.goto("/login")
+    expect(await captchaKind(page)).toBe("slider")
+    await page.getByRole("tab", { name: "手机验证码登录" }).click()
+    // 短信页签的验证码加载完成后：只有 1 个真实验证码，账号密码页签里只剩占位（没有取题）
+    await expect(page.locator('[data-captcha="slider"]:visible')).toHaveCount(1)
+    await expect(page.locator('[data-captcha-placeholder]')).toHaveCount(1)
+    // 换回账号密码页签，验证码重新出现（不是复用隐藏页签的旧题）
+    await page.getByRole("tab", { name: "账号密码登录" }).click()
+    await expect(page.locator('[data-captcha="slider"]:visible')).toHaveCount(1)
+  })
+})
+
+test.describe("验证码外观", () => {
+  test("滑块图片、轨道、数字验证码这一行，都和输入框同宽对齐", async ({ page }) => {
+    await page.goto("/login")
+    await expect(page.locator('[data-captcha="slider"] img')).toBeVisible()
+    const box = async (sel: string) => (await page.locator(sel).first().boundingBox())!
+    const input = await box("#username")
+    for (const sel of ['[data-captcha="slider"] img', '[role="slider"] >> xpath=..']) {
+      const b = await box(sel)
+      expect(Math.round(b.x), `${sel} 左边对齐`).toBe(Math.round(input.x))
+      expect(Math.round(b.width), `${sel} 同宽`).toBe(Math.round(input.width))
+    }
+    expect(Math.round((await box('[role="slider"] >> xpath=..')).height), "轨道与输入框同高").toBe(Math.round(input.height))
+
+    await page.evaluate(() => localStorage.setItem("mock-settings", JSON.stringify({ captchaType: "digits" })))
+    await page.reload()
+    await expect(page.locator("#captcha")).toBeVisible()
+    const field = await box("#captcha")
+    const img = await box('[data-captcha="digits"] button')
+    expect(Math.round(field.x), "数字输入框左边对齐").toBe(Math.round(input.x))
+    expect(Math.round(img.x + img.width), "验证码图片右边对齐").toBe(Math.round(input.x + input.width))
+    expect(Math.round(field.height)).toBe(Math.round(input.height))
+    expect(Math.round(img.height)).toBe(Math.round(input.height))
+  })
+
+  test("只点一下滑块不算一次尝试，题目不会被消耗", async ({ page }) => {
+    await page.goto("/login")
+    const img = page.locator('[data-captcha="slider"] img')
+    await expect(img).toBeVisible()
+    const src = await img.getAttribute("src")
+    await page.locator('[role="slider"]').click()
+    await page.waitForTimeout(1200)
+    await expect(page.locator('[data-captcha="slider"]')).toContainText("向右拖动滑块完成拼图")
+    expect(await img.getAttribute("src"), "还是同一张图").toBe(src)
+    await solveCaptcha(page)
+  })
+
+  test("拼图用的是不带缺口的原图（拼到位后不会显示成灰块）", async ({ page }) => {
+    await page.goto("/login")
+    await expect(page.locator('[data-captcha="slider"] img')).toBeVisible()
+    const [bg, piece] = await page.evaluate(() => [
+      document.querySelector('[data-captcha="slider"] img')!.getAttribute("src")!,
+      getComputedStyle(document.querySelector("[data-piece]")!).backgroundImage,
+    ])
+    expect(decodeURIComponent(bg)).toContain("translate(")
+    expect(decodeURIComponent(piece), "拼图图案里没有缺口").not.toContain("translate(")
+  })
+})
+
+test("滑块验证码整块（标题 + 图片 + 轨道）与「用户名 + 密码」两个字段等高，拼图为图片高度的一半", async ({ page }) => {
+  await page.goto("/login")
+  await expect(page.locator('[data-captcha="slider"] img')).toBeVisible()
+  const m = await page.evaluate(() => {
+    const fields = [...document.querySelectorAll<HTMLElement>("form [data-slot=field]")].filter((f) => f.offsetParent)
+    const r = (el: Element) => el.getBoundingClientRect()
+    return {
+      twoFields: Math.round(r(fields[1]).bottom - r(fields[0]).top),
+      captcha: Math.round(r(fields[2]).height),
+      image: Math.round(r(document.querySelector('[data-captcha="slider"] img')!).height),
+      piece: Math.round(r(document.querySelector("[data-piece]")!).height),
+    }
+  })
+  expect(m.captcha).toBe(m.twoFields)
+  expect(m.piece * 2).toBe(m.image)
 })

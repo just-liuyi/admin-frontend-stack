@@ -41,6 +41,8 @@ npm i lucide-react zustand react-router @tanstack/react-query react-hook-form @h
 | `assets/tabs/tab-bar.tsx`、`tab-views.tsx` | `src/components/` |
 | `assets/login/login-mascots.tsx` | `src/components/` |
 | `assets/login/login.tsx` | `src/pages/login.tsx` |
+| `assets/captcha/captcha.ts` | `src/api/captcha.ts` |
+| `assets/captcha/captcha-field.tsx`、`captcha-digits.tsx`、`captcha-slider.tsx` | `src/components/captcha/` |
 | `assets/login/auth-api.ts` | `src/api/auth.ts` |
 | `assets/login/auth-store.ts` | `src/stores/auth.ts` |
 | `assets/navigation/theme.ts` | `src/stores/theme.ts` |
@@ -59,6 +61,7 @@ npm i lucide-react zustand react-router @tanstack/react-query react-hook-form @h
 - 系统设置页：`npx shadcn@latest add card select skeleton switch textarea alert-dialog`，把 `assets/settings/` 的 4 个文件复制到 `src/pages/settings/`，在 `routes.tsx` 里 `import SettingsPage from "@/pages/settings"` 替换 `/settings` 的占位页（见 `settings.md`，已在空项目中实测）。
 - `src/pages/login.tsx`：顶部的 `APP_NAME` 和 `Brand`（系统名、Logo）。
 - `src/api/auth.ts`：换成真实登录接口，保持函数名和返回值不变。
+- `src/api/captcha.ts`：验证码的演示实现，真实项目换成后端生成图片 + 后端校验（页面代码不用改）。
 - 全局 CSS 的 `--primary`：品牌色。
 
 ## 6. 检查

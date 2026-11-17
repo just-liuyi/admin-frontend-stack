@@ -1,4 +1,4 @@
-import { expect, test } from "./fixtures"
+import { expect, solveCaptcha, test } from "./fixtures"
 
 // 部署在子路径（GitHub Pages：/admin-frontend-stack/）时的检查。服务由 tests/serve-pages.mjs 提供
 test.use({ loggedIn: false, viewport: { width: 1440, height: 860 } })
@@ -17,6 +17,7 @@ test("子路径部署：深层地址、登录回跳、菜单、页签、刷新�
 
   await page.locator("#username").fill("admin")
   await page.locator("#password").fill("123456")
+  await solveCaptcha(page)
   await page.getByRole("button", { name: "登 录" }).click()
   await expect.poll(() => path(page)).toBe("/admin-frontend-stack/users")
   await expect(page.locator("table:visible tbody tr").first()).toBeVisible()
