@@ -1,6 +1,6 @@
-# 构建 demo/ 并发布到 GitHub Pages：https://just-liuyi.github.io/admin-frontend-stack/
+# 先跑浏览器检查，全部通过后再构建 demo/ 并发布到 GitHub Pages：https://just-liuyi.github.io/admin-frontend-stack/
 # 推送到 main 且改动了 demo/ 时自动运行；也可以在仓库的 Actions 页面手动运行
-name: 发布示例页
+name: 检查并发布示例页
 
 on:
   push:
@@ -31,6 +31,18 @@ jobs:
           cache: npm
           cache-dependency-path: demo/package-lock.json
       - run: npm ci
+      # 浏览器检查（tests/*.spec.ts）：有任何一项不通过，就不发布
+      - run: npx playwright install --with-deps chromium
+      - run: npm test
+      - name: 检查失败时上传报告（在本次运行页面的 Artifacts 里下载）
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            demo/playwright-report
+            demo/test-results
+          retention-days: 14
       # 部署在子路径 /admin-frontend-stack/；build:pages 会额外生成 404.html，直接打开深层地址也能进入应用
       - run: npm run build:pages
         env:

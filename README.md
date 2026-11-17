@@ -41,6 +41,18 @@ npm run dev
 
 需要 Node.js 20.19+ 或 22.12+。
 
+## 自动检查
+
+`demo/tests/` 里是浏览器自动检查（Playwright），覆盖导航外壳、多页签、登录页、系统设置、各业务页面和子路径部署。
+
+```bash
+cd demo
+npx playwright install chromium   # 第一次运行前安装浏览器（Windows 上已装 Edge 的可跳过，本机默认用 Edge）
+npm test                          # 自动构建、启动示例页并跑全部检查
+```
+
+推送到 GitHub 后会自动运行同一套检查，**全部通过才会更新在线示例**；失败时可在 Actions 页面下载检查报告。
+
 ## 目录
 
 ```
@@ -50,6 +62,7 @@ skill/admin-frontend-stack/
   assets/            验证过的代码，直接复制使用；previews/ 是效果图
   scripts/           依赖体检脚本
 demo/                在线示例的源码（按 skill 搭建）
+  tests/             浏览器自动检查
 ```
 
 ## 许可证
