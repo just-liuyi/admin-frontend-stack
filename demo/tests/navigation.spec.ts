@@ -22,8 +22,13 @@ test("折叠：按钮仍在顶部、状态记住、悬停显示名称、点父�
   await expect(page.locator(sidebar).first()).toHaveAttribute("data-state", "collapsed")
 
   const open = page.locator('[data-slot="sidebar-header"] button[aria-label="展开侧边栏"]')
-  const box = (await open.boundingBox())!
-  expect(box.y < 60 && box.x < 48, `收放按钮仍在侧边栏顶部 ${JSON.stringify(box)}`).toBe(true)
+  // 折叠有 200ms 动画，要等位置稳定再判断（立即测量会量到动画中途的位置）
+  await expect
+    .poll(async () => {
+      const box = (await open.boundingBox())!
+      return box.y < 60 && box.x < 48
+    }, { message: "收放按钮仍在侧边栏顶部" })
+    .toBe(true)
   await expect(page.locator('[data-slot="sidebar-header"]')).toHaveCSS("border-bottom-width", "0px")
   await expect.poll(async () => (await context.cookies()).find((c) => c.name === "sidebar_state")?.value).toBe("false")
 
