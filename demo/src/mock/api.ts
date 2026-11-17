@@ -1,5 +1,5 @@
 // 模拟接口：带网络延迟，分页、筛选、排序都在"服务端"完成，和真实接口的形态一致
-import { orders, roles, settings, users, type Order, type OrderStatus, type Role, type Settings, type User, type UserStatus } from "./data"
+import { orders, roles, users, type Order, type OrderStatus, type Role, type User, type UserStatus } from "./data"
 
 const delay = (ms = 450) => new Promise((r) => setTimeout(r, ms + Math.random() * 250))
 
@@ -125,14 +125,4 @@ export async function fetchDashboard(days: 7 | 30): Promise<DashboardStats> {
     byChannel,
     recentOrders: [...orders].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6),
   }
-}
-
-export async function fetchSettings(): Promise<Settings> {
-  await delay()
-  return { ...settings }
-}
-
-export async function saveSettings(next: Settings) {
-  await delay(500)
-  Object.assign(settings, next)
 }

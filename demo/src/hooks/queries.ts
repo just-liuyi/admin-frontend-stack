@@ -40,10 +40,3 @@ export function useShipOrder() {
 }
 
 export const useDashboard = (days: 7 | 30) => useQuery({ queryKey: ["dashboard", days], queryFn: () => api.fetchDashboard(days) })
-
-export const useSettings = () => useQuery({ queryKey: ["settings"], queryFn: api.fetchSettings })
-
-export function useSaveSettings() {
-  const qc = useQueryClient()
-  return useMutation({ mutationFn: api.saveSettings, onSuccess: () => qc.invalidateQueries({ queryKey: ["settings"] }) })
-}

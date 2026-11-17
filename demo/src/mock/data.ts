@@ -119,13 +119,3 @@ export const orders: Order[] = Array.from({ length: 300 }, (_, i) => {
     createdAt: created.toISOString(),
   }
 })
-
-export type Settings = { siteName: string; supportEmail: string; orderAutoCloseMinutes: number; allowRegister: boolean; emailNotify: boolean; announcement: string }
-export const settings: Settings = {
-  siteName: "Nova 运营后台",
-  supportEmail: "support@example.com",
-  orderAutoCloseMinutes: 30,
-  allowRegister: false,
-  emailNotify: true,
-  announcement: "双十一大促将于 11 月 1 日 0 点开始，请提前确认库存与物流。",
-}

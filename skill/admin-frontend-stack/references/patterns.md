@@ -58,7 +58,13 @@ shadcn 默认实现里已知要改的地方（2026-10-23 在 shadcn CLI 4.22.1 �
      ```
 
   效果：鼠标点击不出现框；键盘（Tab、方向键）操作时焦点框照常显示，不影响键盘用户。页面里要覆盖这些焦点样式时，也要写成同样的 `in-data-[input=keyboard]:focus-visible:…`，否则覆盖不掉。
-- **Tabs 选中色被悬停色盖掉**：shadcn Tabs 有 `hover:text-foreground`，自定义 `data-active:text-primary` 后，鼠标点完还停在页签上时文字会变黑。要再加 `data-active:hover:text-primary`。
+- **Tabs 选中色被悬停色盖掉**：shadcn Tabs 有 `hover:text-foreground` 和深色下的 `dark:hover:text-foreground`，自定义 `data-active:text-primary` 后，鼠标点完还停在页签上时文字会变黑（浅色）或变白（深色）。深色那条带 `.dark` 类，优先级更高，所以浅色、深色都要写（2026-11-17 实测）：
+
+  ```
+  data-active:text-primary data-active:hover:text-primary
+  dark:data-active:text-primary dark:data-active:hover:text-primary
+  ```
+- **网格里的横向滚动条被撑宽**：网格（grid）和弹性布局（flex）的子项默认不会比自己的内容更窄。子项里放一排横向滚动的按钮时，这一排会把整列撑宽，同列的表单就超出屏幕被截掉。给这个子项加 `min-w-0`。检查时要量元素右边缘是否超出屏幕；只看页面有没有横向滚动条会漏掉，因为外层把超出的部分藏起来了。
 - **切换页签时整块上下跳**：几个页签内容高度不同，外层又是上下居中时，切换一次整块就跳一下。把页签内容叠放在同一格，高度固定为最高的那个：
 
   ```tsx

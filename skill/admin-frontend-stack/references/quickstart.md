@@ -56,6 +56,7 @@ npm i lucide-react zustand react-router @tanstack/react-query react-hook-form @h
 
 - `src/config/nav.ts`：菜单（标题、地址、图标、子菜单）。
 - `src/config/routes.tsx`：把 `placeholder(...)` 换成真实页面组件，地址要和菜单一一对应。
+- 系统设置页：`npx shadcn@latest add card select skeleton switch textarea alert-dialog`，把 `assets/settings/` 的 4 个文件复制到 `src/pages/settings/`，在 `routes.tsx` 里 `import SettingsPage from "@/pages/settings"` 替换 `/settings` 的占位页（见 `settings.md`，已在空项目中实测）。
 - `src/pages/login.tsx`：顶部的 `APP_NAME` 和 `Brand`（系统名、Logo）。
 - `src/api/auth.ts`：换成真实登录接口，保持函数名和返回值不变。
 - 全局 CSS 的 `--primary`：品牌色。

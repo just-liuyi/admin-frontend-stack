@@ -22,10 +22,11 @@ type Focus = "username" | "password" | "phone" | "code" | null
 /**
  * 登录方式页签的样式。⚠️ shadcn 默认的焦点样式是一圈灰框（ring + outline），鼠标点击后也会出现，
  * 在下划线页签上像个被截断的气泡。这里去掉灰框，改为聚焦时下划线从 2px 加粗到 4px：键盘用户能看出焦点，又不改变布局。
- * 另外 shadcn 的 hover:text-foreground 会盖掉选中色（点完鼠标还停在上面时变黑），所以选中时悬停也保持主色。
+ * 另外 shadcn 的 hover:text-foreground（深色模式下是 dark:hover:text-foreground）会盖掉选中色：点完鼠标还停在上面时变黑 / 变白，
+ * 所以浅色、深色都要写"选中时悬停也保持主色"。
  */
 const tabTriggerClass =
-  "flex-none px-0 pb-2.5 text-base after:bg-primary data-active:text-primary data-active:hover:text-primary dark:data-active:text-primary in-data-[input=keyboard]:focus-visible:border-transparent in-data-[input=keyboard]:focus-visible:ring-0 in-data-[input=keyboard]:focus-visible:outline-none focus-visible:after:h-1"
+  "flex-none px-0 pb-2.5 text-base after:bg-primary data-active:text-primary data-active:hover:text-primary dark:data-active:text-primary dark:data-active:hover:text-primary in-data-[input=keyboard]:focus-visible:border-transparent in-data-[input=keyboard]:focus-visible:ring-0 in-data-[input=keyboard]:focus-visible:outline-none focus-visible:after:h-1"
 
 export default function LoginPage() {
   const login = useAuthStore((s) => s.login)
