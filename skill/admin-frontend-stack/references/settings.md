@@ -5,7 +5,7 @@
 效果图：`assets/previews/settings-desktop.jpg`。
 
 最后核实：2026-11-17（React 19.3、react-hook-form 7、zod 4、shadcn CLI 4.22、radix-nova）。
-验证方式：`assets/settings/` 的 4 个文件放进按 `quickstart.md` 从零搭建的空项目里，`tsc -b`、`vite build`、依赖严格检查通过；浏览器走查了下文「交付检查」的全部项目。
+验证方式：`assets/settings/settings-api.ts` 放到 `src/api/settings.ts`，其余 3 个页面文件放到 `src/pages/settings/`，在按 `quickstart.md` 从零搭建的空项目里，`tsc -b`、`vite build`、依赖严格检查通过；浏览器走查了下文「交付检查」的全部项目。
 
 ## 目录
 - 直接用现成代码
@@ -24,10 +24,12 @@
 | `index.tsx` | `src/pages/settings/index.tsx` | 页面：标题、分类页签、未保存修改的确认弹窗 |
 | `sections.tsx` | `src/pages/settings/` | 分类清单 + 每个分类的字段和校验规则 |
 | `settings-form.tsx` | `src/pages/settings/` | 分类表单外壳（读取、保存、取消、未保存提示）和字段组件 |
-| `settings-api.ts` | `src/pages/settings/` | 设置的类型、读取 / 保存接口、查询 hooks，以及登录页用的公开配置。**接口是假实现**，接后端时只换函数内部 |
+| `settings-api.ts` | `src/api/settings.ts` | 设置的类型、读取 / 保存接口、查询 hooks，以及登录页用的公开配置。**接口是假实现**，接后端时只换函数内部 |
 
 还需要：`npx shadcn@latest add card select skeleton switch textarea alert-dialog tabs field input button sonner`，以及 `react-hook-form`、`@hookform/resolvers@5`、`zod@4`、`@tanstack/react-query`。
 在 `src/config/routes.tsx` 里把 `/settings` 的占位页换成 `import SettingsPage from "@/pages/settings"`。
+
+共享模块放在 API 目录，供登录接口、登录页和设置页共同使用。`src/api/` 不得反向导入 `src/pages/`；移动或移除设置页不会影响登录对共享配置的读取。
 
 ## 布局
 
@@ -71,7 +73,7 @@
 ## 新增一个分类 / 一个设置项
 
 新增设置项：
-1. `settings-api.ts`：在 `Settings` 类型和默认值里加字段（接后端后由接口返回）。
+1. `src/api/settings.ts`（来自 `assets/settings/settings-api.ts`）：在 `Settings` 类型和默认值里加字段（接后端后由接口返回）。
 2. `sections.tsx`：在对应分类的 `schema`、`pick` 和 JSX 里各加一处。
 
 新增分类：在 `sections.tsx` 里写一个 `XxxSection` 组件（照抄已有分类的写法），再在 `settingCategories` 清单里加一行（`id`、`label`、Lucide 图标、组件）。页签和地址参数自动生效。

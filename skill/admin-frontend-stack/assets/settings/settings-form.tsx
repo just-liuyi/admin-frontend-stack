@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
-import { useSaveSettings, useSettings, type Settings } from "./settings-api"
+import { useSaveSettings, useSettings, type Settings } from "@/api/settings"
 
 /**
  * 一个设置分类的表单外壳：读取设置、只保存本分类的字段、取消 / 保存按钮、把"有没有未保存修改"报告给页面。

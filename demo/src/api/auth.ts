@@ -3,7 +3,7 @@
  * 接入真实后端时只替换函数内部，保持函数名、参数和返回值不变，登录页就不用改。
  * 登录失败请抛 LoginError（message 会直接显示在表单里），其他异常显示"登录失败，请稍后再试"。
  */
-import { getSettingsSnapshot } from "@/pages/settings/settings-api"
+import { getSettingsSnapshot } from "@/api/settings"
 import type { CurrentUser } from "@/stores/auth"
 import { CaptchaError, consumeCaptchaToken, verifyDigits, type CaptchaProof } from "./captcha"
 

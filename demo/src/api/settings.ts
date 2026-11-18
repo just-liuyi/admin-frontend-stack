@@ -1,8 +1,9 @@
 /**
- * 系统设置的数据：类型、读取 / 保存接口、查询 hooks。
+ * 共享设置 API：类型、模拟存储、读取 / 保存接口和查询 hooks。
+ * 登录接口、登录页和设置页共同依赖本模块；本模块不得反向依赖 pages 目录。
  * ⚠️ fetchSettings / saveSettings 是演示用的假实现（数据存在浏览器 localStorage 里，换浏览器或清缓存后恢复默认）。
  * 接入真实后端时只替换这两个函数的内部，保持函数名、参数和返回值不变，页面就不用改。
- * 新增设置项：在 Settings 类型和 defaults 里加字段，再到 sections.tsx 的对应分类里加输入框。
+ * 新增设置项：在 Settings 类型和 DEFAULTS 里加字段，再到 sections.tsx 的对应分类里加输入框。
  */
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import type { CaptchaKind } from "@/api/captcha"

@@ -18,7 +18,7 @@ const first = settingCategories[0].id
 
 /**
  * 系统设置页：顶部分类页签 + 当前分类的表单（每个分类单独保存）。
- * 分类清单在 sections.tsx；数据与接口在 settings-api.ts。
+ * 分类清单在 sections.tsx；共享数据与接口在 src/api/settings.ts。
  */
 export default function SettingsPage() {
   const [params, setParams] = useSearchParams()

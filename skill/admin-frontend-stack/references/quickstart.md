@@ -44,6 +44,7 @@ npm i lucide-react zustand react-router @tanstack/react-query react-hook-form @h
 | `assets/captcha/captcha.ts` | `src/api/captcha.ts` |
 | `assets/captcha/captcha-field.tsx`、`captcha-digits.tsx`、`captcha-slider.tsx` | `src/components/captcha/` |
 | `assets/login/auth-api.ts` | `src/api/auth.ts` |
+| `assets/settings/settings-api.ts` | `src/api/settings.ts`（登录也依赖，必须复制） |
 | `assets/login/auth-store.ts` | `src/stores/auth.ts` |
 | `assets/navigation/theme.ts` | `src/stores/theme.ts` |
 | `assets/tabs/tabs.ts` | `src/stores/tabs.ts` |
@@ -58,7 +59,7 @@ npm i lucide-react zustand react-router @tanstack/react-query react-hook-form @h
 
 - `src/config/nav.ts`：菜单（标题、地址、图标、子菜单）。
 - `src/config/routes.tsx`：把 `placeholder(...)` 换成真实页面组件，地址要和菜单一一对应。
-- 系统设置页：`npx shadcn@latest add card select skeleton switch textarea alert-dialog`，把 `assets/settings/` 的 4 个文件复制到 `src/pages/settings/`，在 `routes.tsx` 里 `import SettingsPage from "@/pages/settings"` 替换 `/settings` 的占位页（见 `settings.md`，已在空项目中实测）。
+- 系统设置页：`npx shadcn@latest add card select skeleton switch textarea alert-dialog`，共享模块 `assets/settings/settings-api.ts` 已在第 3 步复制到 `src/api/settings.ts`；把其余 3 个页面文件复制到 `src/pages/settings/`，在 `routes.tsx` 里 `import SettingsPage from "@/pages/settings"` 替换 `/settings` 的占位页（见 `settings.md`，已在空项目中实测）。
 - `src/pages/login.tsx`：顶部的 `APP_NAME` 和 `Brand`（系统名、Logo）。
 - `src/api/auth.ts`：换成真实登录接口，保持函数名和返回值不变。
 - `src/api/captcha.ts`：验证码的演示实现，真实项目换成后端生成图片 + 后端校验（页面代码不用改）。

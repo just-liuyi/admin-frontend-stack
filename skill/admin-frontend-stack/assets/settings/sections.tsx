@@ -3,7 +3,7 @@ import type { LucideIcon } from "lucide-react"
 import { Bell, CreditCard, DatabaseBackup, HardDrive, ShieldCheck, ShoppingCart, Store } from "lucide-react"
 import { z } from "zod"
 
-import type { Settings } from "./settings-api"
+import type { Settings } from "@/api/settings"
 import { FieldGrid, SelectField, SettingsForm, SwitchField, TextareaField, TextField } from "./settings-form"
 
 export type SectionProps = { onDirtyChange: (dirty: boolean) => void }

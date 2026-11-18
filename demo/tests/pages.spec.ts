@@ -72,7 +72,9 @@ test("页签焦点框只在键盘操作时出现", async ({ page }) => {
   await expect.poll(() => hasRing(shipped), "键盘切换：有焦点框").toBe(true)
   await page.mouse.click(1300, 700)
   await pending.click()
-  expect(await hasRing(pending), "用过键盘后再用鼠标点：没有焦点框").toBe(false)
+  await expect(page.locator("html")).toHaveAttribute("data-input", "pointer")
+  // TabsTrigger 有 transition-all，阴影过渡结束前仍可能读到上一帧的焦点圈。
+  await expect.poll(() => hasRing(pending), { message: "用过键盘后再用鼠标点：没有焦点框" }).toBe(false)
 })
 
 test.describe("登录页页签的键盘焦点", () => {
